@@ -95,9 +95,12 @@ typedef void (^STOMPMessageHandler)(STOMPMessage *message);
 @property (nonatomic, copy) void (^errorHandler)(NSError *error);
 @property (nonatomic, assign) BOOL connected;
 @property (nonatomic, readonly) BOOL heartbeatActivated;
+@property (nonatomic, assign) BOOL disableConnectWhenTimeOut;
 @property (nonatomic, weak) NSObject<STOMPClientDelegate> *delegate;
 
 - (id)initWithURL:(NSURL *)theUrl webSocketHeaders:(NSDictionary *)headers useHeartbeat:(BOOL)heartbeat;
+
+- (void)changeHeaders:(NSDictionary *)headers;
 
 - (void)connectWithLogin:(NSString *)login
                 passcode:(NSString *)passcode

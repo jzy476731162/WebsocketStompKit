@@ -47,8 +47,8 @@
 
 #pragma mark Control characters
 
-#define	kLineFeed @"\x0A"
-#define	kNullChar @"\x00"
+#define    kLineFeed @"\x0A"
+#define    kNullChar @"\x00"
 #define kHeaderSeparator @":"
 
 #pragma mark -
@@ -126,6 +126,9 @@
     NSMutableArray *contents = (NSMutableArray *)[[msg componentsSeparatedByString:kLineFeed] mutableCopy];
     while ([contents count] > 0 && [contents[0] isEqual:@""]) {
         [contents removeObjectAtIndex:0];
+    }
+    if (contents.count == 0) {
+        return nil;
     }
     NSString *command = [[contents objectAtIndex:0] copy];
     NSMutableDictionary *headers = [[NSMutableDictionary alloc] init];
@@ -338,6 +341,13 @@ CFAbsoluteTime serverActivity;
     return self;
 }
 
+- (void)changeHeaders:(NSDictionary *)headers {
+    for (NSString *key in headers.allKeys) {
+        [self.socket addHeader:[headers objectForKey:key] forKey:key];
+    }
+    self.connectFrameHeaders = headers;
+}
+
 - (BOOL) heartbeatActivated {
     return heartbeat;
 }
@@ -423,7 +433,9 @@ CFAbsoluteTime serverActivity;
                           body:nil];
     [self.subscriptions removeAllObjects];
     [self.pinger invalidate];
-    [self.ponger invalidate];
+    if (self.disableConnectWhenTimeOut == true) {
+        [self.ponger invalidate];
+    }
     [self.socket disconnect];
 }
 
@@ -494,11 +506,13 @@ CFAbsoluteTime serverActivity;
                                                           repeats: YES];
         }
         if (pongTTL > 0) {
-            self.ponger = [NSTimer scheduledTimerWithTimeInterval: pongTTL
-                                                           target: self
-                                                         selector: @selector(checkPong:)
-                                                         userInfo: @{@"ttl": [NSNumber numberWithInteger:pongTTL]}
-                                                          repeats: YES];
+            if (self.disableConnectWhenTimeOut == true) {
+                self.ponger = [NSTimer scheduledTimerWithTimeInterval: pongTTL
+                                                               target: self
+                                                             selector: @selector(checkPong:)
+                                                             userInfo: @{@"ttl": [NSNumber numberWithInteger:pongTTL]}
+                                                              repeats: YES];
+            }
         }
     });
     
